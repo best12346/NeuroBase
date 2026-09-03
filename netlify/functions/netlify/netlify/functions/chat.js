@@ -1,17 +1,18 @@
 // This function runs on Netlify's servers, never in the visitor's browser.
-// Your API key lives only here — as an environment variable — and is never sent to the client.
+// Your Hugging Face API key lives only here — as an environment variable —
+// and is never sent to the client.
 
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method not allowed" };
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.HF_API_KEY;
   if (!apiKey) {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: "No ANTHROPIC_API_KEY set on the server. Add it in Netlify → Site settings → Environment variables.",
+        error: "No HF_API_KEY set on the server. Add it in Netlify → Project configuration → Environment variables.",
       }),
     };
   }
@@ -22,24 +23,51 @@ export async function handler(event) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing message" }) };
     }
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    // Change this if you want a different model available on your Hugging Face account.
+    const MODEL = "mistralai/Mistral-7B-Instruct-v0.2";
+
+    const systemPrompt =
+      "You are the NeuroBase in-app assistant for a concussion-recovery tracking app. You only discuss the user's logged symptoms, activities, and recovery patterns. You never diagnose, never say someone is medically recovered, and always defer medical judgment to their healthcare professional. Keep answers short (2-3 sentences).";
+
+    const fullPrompt = `<s>[INST] ${systemPrompt}\n\nUser question: ${message} [/INST]`;
+
+    const res = await fetch(`https://api-inference.huggingface.co/models/${MODEL}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", // change if your account uses a different model name
-        max_tokens: 300,
-        system:
-          "You are the NeuroBase in-app assistant for a concussion-recovery tracking app. You only discuss the user's logged symptoms, activities, and recovery patterns. You never diagnose, never say someone is medically recovered, and always defer medical judgment to their healthcare professional.",
-        messages: [{ role: "user", content: message }],
+        inputs: fullPrompt,
+        parameters: {
+          max_new_tokens: 250,
+          temperature: 0.6,
+          return_full_text: false,
+        },
       }),
     });
 
+    if (!res.ok) {
+      const errText = await res.text();
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          text: null,
+          debug: `Hugging Face error (${res.status}): ${errText.slice(0, 200)}`,
+        }),
+      };
+    }
+
     const data = await res.json();
-    const text = data?.content?.[0]?.text || "Sorry, I couldn't generate a response just now.";
+    let text = Array.isArray(data) ? data[0]?.generated_text : data?.generated_text;
+    text = (text || "").trim();
+
+    if (!text) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ text: null, debug: "Empty response from Hugging Face." }),
+      };
+    }
 
     return {
       statusCode: 200,
@@ -48,7 +76,7 @@ export async function handler(event) {
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Server error reaching the AI." }),
+      body: JSON.stringify({ error: "Server error reaching Hugging Face." }),
     };
   }
 }
