@@ -145,14 +145,14 @@
     </div>
     <div class="card navy" style="cursor:pointer;" onclick="showScreen('insights')">
       <div class="tag">🧠 Recovery Overview</div>
-      <div class="pill">Looking steady</div>
-      <p>Your recent symptoms have remained relatively stable. Tap for the full pattern →</p>
+      <div class="pill" id="overview-pill">⚪ No check-ins yet</div>
+      <p id="overview-text">Log your first check-in to start tracking your recovery pattern.</p>
     </div>
     <div class="metric-grid">
-      <div class="metric"><div>🧠</div><div class="lbl">Symptoms</div><div class="val">3.2/10</div></div>
-      <div class="metric"><div>⚡</div><div class="lbl">Energy</div><div class="val">6/10</div></div>
-      <div class="metric"><div>🎯</div><div class="lbl">Focus</div><div class="val">7/10</div></div>
-      <div class="metric"><div>😴</div><div class="lbl">Sleep</div><div class="val">7h</div></div>
+      <div class="metric"><div>🧠</div><div class="lbl">Symptoms</div><div class="val">—</div></div>
+      <div class="metric"><div>⚡</div><div class="lbl">Energy</div><div class="val">—</div></div>
+      <div class="metric"><div>🎯</div><div class="lbl">Focus</div><div class="val">—</div></div>
+      <div class="metric"><div>😴</div><div class="lbl">Sleep</div><div class="val">—</div></div>
     </div>
     <div class="card">
       <div class="section-title">Today's Activities</div>
@@ -231,7 +231,7 @@
     <div class="card">
       <div class="section-title">Symptom level</div>
       <svg class="graph" viewBox="0 0 300 110" preserveAspectRatio="none">
-        <polyline points="10,20 70,45 130,70 190,78 260,92" fill="none" stroke="#5B8DEF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="" fill="none" stroke="#5B8DEF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <div class="graph-labels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span></div>
     </div>
@@ -303,8 +303,8 @@
       </div>
     </div>
     <div class="key-box" id="key-box" style="display:none;">
-      <div style="font-size:11px;font-weight:600;">Your Groq API key (this device only)</div>
-      <input type="password" id="api-key-input" placeholder="gsk_...">
+      <div style="font-size:11px;font-weight:600;">Your Hugging Face API key (this device only)</div>
+      <input type="password" id="api-key-input" placeholder="hf_...">
       <div class="hint" id="key-hint">No key yet — using demo answers until you add one.</div>
     </div>
     <div id="chat-messages" style="flex:1;overflow-y:auto;margin-bottom:8px;"></div>
@@ -442,6 +442,8 @@ async function loadDashboard(){
     document.querySelectorAll('.metric .val')[1].textContent = latest.energy + '/10';
     document.querySelectorAll('.metric .val')[2].textContent = latest.concentration + '/10';
     document.querySelectorAll('.metric .val')[3].textContent = latest.sleep_hours + 'h';
+    document.getElementById('overview-pill').textContent = "🟢 Looking steady";
+    document.getElementById('overview-text').textContent = "Your recent symptoms have remained relatively stable. Tap for the full pattern →";
 
     // Rebuild the symptom-level graph from real headache values, oldest to newest
     const points = [...data].reverse().map(d => d.headache);
@@ -463,13 +465,16 @@ async function loadDashboard(){
 }
 
 // ---- Real, explainable trend detection (lightweight ML: no black box, every number traceable) ----
+// Compares the average of the older half of check-ins to the average of the more recent half,
+// per symptom, and surfaces which symptoms moved the most — this is exactly what the
+// "Why am I seeing this?" box reports back, so nothing is hidden from the user.
 function computeAndRenderInsight(dataNewestFirst){
   const pill = document.getElementById('insight-pill');
   const text = document.getElementById('insight-text');
   const whyBtn = document.getElementById('why-btn');
   const whyBox = document.getElementById('why-box');
 
-  const chron = [...dataNewestFirst].reverse();
+  const chron = [...dataNewestFirst].reverse(); // oldest -> newest
   if(chron.length < 2){
     pill.textContent = "⚪ Log a few check-ins to see your pattern";
     pill.style.background = "#EEF1F5"; pill.style.color = "#6B7686";
@@ -535,7 +540,7 @@ function computeAndRenderInsight(dataNewestFirst){
 // ---- Activity ----
 const chips = [["📚","Study"],["📖","Reading"],["🚶","Walking"],["💻","Screen"],["🎧","Music"],["🧘","Relaxation"],["🎨","Creative"],["🛋️","Rest"],["🏃","Physical"]];
 let selectedActivity = "Study";
-let activityStage = "idle";
+let activityStage = "idle"; // idle, during, done
 const chipGrid = document.getElementById('chip-grid');
 chips.forEach(([icon,label])=>{
   const el = document.createElement('div');
@@ -617,20 +622,20 @@ async function askAI(q){
   const key = apiKeyInput.value.trim();
   if(!key) return mockAnswer(q);
   try{
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const systemPrompt = "You are the NeuroBase in-app assistant for a concussion-recovery tracking app. You only discuss the user's logged symptoms, activities, and recovery patterns. You never diagnose, never say someone is medically recovered, and always defer medical judgment to their healthcare professional. Keep answers short (2-3 sentences).";
+    const fullPrompt = `<s>[INST] ${systemPrompt}\n\nUser question: ${q} [/INST]`;
+
+    const res = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        max_tokens: 300,
-        messages: [
-          { role: "system", content: "You are the NeuroBase in-app assistant for a concussion-recovery tracking app. You only discuss the user's logged symptoms, activities, and recovery patterns. You never diagnose, never say someone is medically recovered, and always defer medical judgment to their healthcare professional. Keep answers short (2-3 sentences)." },
-          { role: "user", content: q }
-        ]
+        inputs: fullPrompt,
+        parameters: { max_new_tokens: 250, temperature: 0.6, return_full_text: false }
       })
     });
     const data = await res.json();
-    return data?.choices?.[0]?.message?.content?.trim() || mockAnswer(q);
+    const text = Array.isArray(data) ? data[0]?.generated_text : data?.generated_text;
+    return (text || "").trim() || mockAnswer(q);
   }catch(e){
     return mockAnswer(q);
   }
@@ -654,4 +659,3 @@ function askSuggestion(q){
 
 </body>
 </html>
-
