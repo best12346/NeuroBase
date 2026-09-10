@@ -305,7 +305,7 @@
     <div class="key-box" id="key-box" style="display:none;">
       <div style="font-size:11px;font-weight:600;">Your Hugging Face API key (this device only)</div>
       <input type="password" id="api-key-input" placeholder="hf_...">
-      <div class="hint" id="key-hint">No key yet — using demo answers until you add one.</div>
+      <div class="hint" id="key-hint">Key set — your messages now go to the real AI.</div>
     </div>
     <div id="chat-messages" style="flex:1;overflow-y:auto;margin-bottom:8px;"></div>
     <div class="suggestions">
@@ -603,7 +603,10 @@ function addBubble(from, text){
 addBubble('user', "Why did my pattern change today?");
 addBubble('bot', "Your fatigue increased from 3/10 yesterday to 6/10 today, while your concentration rating decreased. That's why today's pattern differs from your recent trend.");
 
+const HF_API_KEY = "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"; // already plugged in — no need to paste it in the app
+
 const apiKeyInput = document.getElementById('api-key-input');
+apiKeyInput.value = HF_API_KEY;
 apiKeyInput.addEventListener('input', ()=>{
   document.getElementById('key-hint').textContent = apiKeyInput.value.trim()
     ? "Key set — your messages now go to the real AI."
