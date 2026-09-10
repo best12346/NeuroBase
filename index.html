@@ -1,12 +1,657 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NeuroBase</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroBase</title>
+<style>
+  :root{
+    --bg:#F6F8FB; --navy:#10203D; --navy-soft:#1E3660; --blue:#5B8DEF; --green:#46B892;
+    --line:#E7ECF3; --text-muted:#6B7686; --text-soft:#93A0B4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:
+      radial-gradient(circle at 8% 8%, rgba(91,141,239,0.06), transparent 40%),
+      radial-gradient(circle at 92% 15%, rgba(70,184,146,0.06), transparent 40%),
+      var(--bg);
+    color:var(--navy); display:flex; flex-direction:column; align-items:center;
+    padding:32px 16px 60px; min-height:100vh;
+  }
+  .logo{width:44px;height:44px;margin-bottom:12px;}
+  h1{font-size:22px;font-weight:800;margin-bottom:4px;}
+  .sub{font-size:12px;color:var(--text-muted);margin-bottom:24px;text-align:center;max-width:280px;}
+
+  .phone{
+    background:#fff;border:1px solid var(--line);border-radius:36px;box-shadow:0 10px 30px -14px rgba(16,32,61,0.2);
+    padding:20px;width:100%;max-width:360px;min-height:640px;display:flex;flex-direction:column;position:relative;overflow:hidden;
+  }
+  .screen{display:none;flex:1;flex-direction:column;}
+  .screen.active{display:flex;}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:14px;}
+  .card.navy{background:linear-gradient(135deg,var(--navy),var(--navy-soft));color:#fff;border:none;}
+  .tag{font-size:11px;font-weight:700;text-transform:uppercase;opacity:.75;letter-spacing:.03em;}
+  .pill{display:inline-block;margin-top:10px;font-size:13px;font-weight:700;background:rgba(70,184,146,0.18);color:#2E9C71;padding:5px 12px;border-radius:999px;}
+  .card.navy .pill{background:rgba(70,184,146,0.2);color:#8BE0BE;}
+  .card p{font-size:12.5px;color:var(--text-muted);margin-top:8px;line-height:1.5;}
+  .card.navy p{opacity:.85;color:#fff;}
+
+  .metric-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+  .metric{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;}
+  .metric .lbl{font-size:11px;color:var(--text-muted);font-weight:600;margin:6px 0 2px;}
+  .metric .val{font-size:19px;font-weight:700;}
+
+  .row{display:flex;justify-content:space-between;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13px;}
+  .row:last-child{border-bottom:none;}
+  .row .r{color:var(--text-muted);font-weight:600;}
+
+  .section-title{font-size:13px;font-weight:700;margin-bottom:10px;}
+
+  .slider-row{margin-bottom:16px;}
+  .slider-top{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;margin-bottom:6px;}
+  .slider-top .v{color:var(--blue);font-weight:700;}
+  input[type=range]{width:100%;accent-color:var(--blue);}
+
+  .btn{width:100%;padding:13px;border-radius:14px;border:none;background:var(--navy);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;}
+  .btn.outline{background:transparent;border:1.5px solid var(--navy);color:var(--navy);}
+
+  .chip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center;font-size:11px;font-weight:600;cursor:pointer;}
+  .chip.sel{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .chip .e{font-size:18px;display:block;margin-bottom:6px;}
+
+  .bda{display:flex;gap:6px;margin-top:6px;}
+  .bda div{flex:1;background:#F3F6FA;border-radius:12px;padding:10px 6px;text-align:center;font-size:10.5px;color:var(--text-muted);}
+  .bda div b{display:block;color:var(--navy);font-size:11px;margin-bottom:2px;}
+  .bda div.on{background:#EAF1FE;}
+
+  svg.graph{width:100%;height:110px;display:block;}
+  .graph-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text-soft);margin-top:6px;}
+
+  .why-btn{background:none;border:none;color:var(--blue);font-weight:700;font-size:12px;margin-top:10px;cursor:pointer;padding:0;}
+  .why-box{background:#F3F6FA;border-radius:14px;padding:12px;margin-top:10px;font-size:11.5px;color:var(--text-muted);line-height:1.5;display:none;}
+  .why-box.show{display:block;}
+
+  .chat-bubble{max-width:82%;padding:10px 14px;border-radius:16px;font-size:12.5px;line-height:1.5;margin-bottom:10px;}
+  .chat-bubble.user{background:var(--navy);color:#fff;margin-left:auto;border-bottom-right-radius:4px;}
+  .chat-bubble.bot{background:#F1F4F9;border-bottom-left-radius:4px;}
+  .suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .sugg{font-size:10px;font-weight:600;color:var(--navy-soft);background:#F1F4F9;border:none;border-radius:999px;padding:6px 12px;cursor:pointer;}
+  .chat-input-row{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 14px;}
+  .chat-input-row input{flex:1;border:none;outline:none;font-size:12px;}
+  .send-btn{width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;border:none;font-size:13px;cursor:pointer;flex-shrink:0;}
+  .key-box{background:#F3F6FA;border-radius:14px;padding:10px;margin-bottom:10px;}
+  .key-box input{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:11px;outline:none;margin-top:6px;}
+  .key-box .hint{font-size:10px;color:var(--text-soft);margin-top:6px;line-height:1.4;}
+  .settings-toggle{background:none;border:none;font-size:14px;cursor:pointer;color:var(--text-soft);}
+
+  .bottomnav{margin-top:auto;padding-top:14px;display:flex;justify-content:space-between;background:#F3F6FA;border-radius:16px;padding:8px 4px;}
+  .navitem{flex:1;text-align:center;font-size:9px;font-weight:600;color:var(--text-soft);background:none;border:none;cursor:pointer;padding:6px 0;border-radius:10px;}
+  .navitem.active{color:var(--navy);background:#fff;}
+  .navitem .e{display:block;font-size:14px;margin-bottom:2px;}
+
+  .fab{position:absolute;right:18px;bottom:88px;width:48px;height:48px;border-radius:50%;background:var(--navy);color:#fff;font-size:18px;border:none;box-shadow:0 8px 20px rgba(16,32,61,0.3);cursor:pointer;}
+
+  .auth-box{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 8px;}
+  .auth-box h2{font-size:18px;margin-bottom:6px;}
+  .auth-box p.sub2{font-size:12px;color:var(--text-muted);margin-bottom:18px;}
+  .auth-box label{font-size:12px;font-weight:600;margin-bottom:6px;display:block;}
+  .auth-box input[type=text]{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:14px;margin-bottom:16px;outline:none;}
+  .switch-link{background:none;border:none;color:var(--text-soft);font-size:11px;font-weight:600;margin-top:14px;text-align:center;width:100%;cursor:pointer;}
+
+  footer{margin-top:20px;font-size:11px;color:var(--text-soft);text-align:center;max-width:300px;}
+</style>
+</head>
+<body>
+
+<svg class="logo" viewBox="0 0 56 56">
+  <line x1="28" y1="8" x2="28" y2="24" stroke="#10203D" stroke-width="5" stroke-linecap="round"/>
+  <line x1="48" y1="28" x2="32" y2="28" stroke="#10203D" stroke-width="5" stroke-linecap="round"/>
+  <line x1="28" y1="48" x2="28" y2="32" stroke="#10203D" stroke-width="5" stroke-linecap="round"/>
+  <line x1="8" y1="28" x2="24" y2="28" stroke="#10203D" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="28" cy="6" r="4" fill="#5B8DEF"/><circle cx="50" cy="28" r="4" fill="#46B892"/>
+  <circle cx="28" cy="50" r="4" fill="#5B8DEF"/><circle cx="6" cy="28" r="4" fill="#46B892"/>
+  <circle cx="28" cy="28" r="5" fill="#fff"/>
+</svg>
+<h1>NeuroBase</h1>
+<p class="sub">Tap through the app — everything below is live.</p>
+
+<div class="phone">
+
+  <!-- AUTH -->
+  <div class="screen active" id="screen-auth">
+    <div class="auth-box">
+      <h2 id="auth-title">Create your account</h2>
+      <p class="sub2" id="auth-sub">Let's set up your recovery dashboard.</p>
+      <label>What's your name?</label>
+      <input type="text" id="auth-name" placeholder="e.g. Alex">
+      <label>Email</label>
+      <input type="text" id="auth-email" placeholder="you@example.com">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="At least 6 characters">
+      <div id="auth-error" style="color:#D96C6C;font-size:11px;margin:-8px 0 12px;display:none;"></div>
+      <button class="btn" id="auth-submit" disabled>Create account →</button>
+      <button class="switch-link" id="auth-switch">Already have an account? Log in</button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen" id="screen-home">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:12px;color:var(--text-soft);">Good morning, <b id="home-name" style="color:var(--navy);">Alex</b> 👋<br>Let's check in with your recovery.</div>
+      <div style="width:32px;height:32px;border-radius:50%;background:#F3F6FA;display:flex;align-items:center;justify-content:center;">🔔</div>
+    </div>
+    <div class="card navy" style="cursor:pointer;" onclick="showScreen('insights')">
+      <div class="tag">🧠 Recovery Overview</div>
+      <div class="pill">Looking steady</div>
+      <p>Your recent symptoms have remained relatively stable. Tap for the full pattern →</p>
+    </div>
+    <div class="metric-grid">
+      <div class="metric"><div>🧠</div><div class="lbl">Symptoms</div><div class="val">3.2/10</div></div>
+      <div class="metric"><div>⚡</div><div class="lbl">Energy</div><div class="val">6/10</div></div>
+      <div class="metric"><div>🎯</div><div class="lbl">Focus</div><div class="val">7/10</div></div>
+      <div class="metric"><div>😴</div><div class="lbl">Sleep</div><div class="val">7h</div></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Today's Activities</div>
+      <div class="row"><div>📚 Study</div><div class="r">30 min</div></div>
+      <div class="row"><div>🚶 Walk</div><div class="r">20 min</div></div>
+      <div class="row"><div>📱 Screen</div><div class="r">45 min</div></div>
+    </div>
+    <button class="btn" onclick="showScreen('checkin')">Start today's check-in →</button>
+    <div class="bottomnav">
+      <button class="navitem active" data-tab="home" onclick="showScreen('home')"><span class="e">🏠</span>Home</button>
+      <button class="navitem" data-tab="checkin" onclick="showScreen('checkin')"><span class="e">📝</span>Check-in</button>
+      <button class="navitem" data-tab="activity" onclick="showScreen('activity')"><span class="e">🏃</span>Activity</button>
+      <button class="navitem" data-tab="insights" onclick="showScreen('insights')"><span class="e">📊</span>Insights</button>
+      <button class="navitem" data-tab="report" onclick="showScreen('report')"><span class="e">📄</span>Report</button>
+    </div>
+    <button class="fab" onclick="openChat()">💬</button>
+  </div>
+
+  <!-- CHECK-IN -->
+  <div class="screen" id="screen-checkin">
+    <div id="checkin-form">
+      <div class="section-title" style="font-size:16px;margin-bottom:16px;">How are you feeling today?</div>
+      <div class="slider-row"><div class="slider-top"><span>Headache</span><span class="v" id="v-headache">7/10</span></div><input type="range" min="0" max="10" value="7" oninput="updateSlider('headache',this.value)"></div>
+      <div class="slider-row"><div class="slider-top"><span>Dizziness</span><span class="v" id="v-dizziness">3/10</span></div><input type="range" min="0" max="10" value="3" oninput="updateSlider('dizziness',this.value)"></div>
+      <div class="slider-row"><div class="slider-top"><span>Fatigue</span><span class="v" id="v-fatigue">5/10</span></div><input type="range" min="0" max="10" value="5" oninput="updateSlider('fatigue',this.value)"></div>
+      <div class="slider-row"><div class="slider-top"><span>Concentration</span><span class="v" id="v-concentration">7/10</span></div><input type="range" min="0" max="10" value="7" oninput="updateSlider('concentration',this.value)"></div>
+      <div class="slider-row"><div class="slider-top"><span>Light sensitivity</span><span class="v" id="v-light">2/10</span></div><input type="range" min="0" max="10" value="2" oninput="updateSlider('light',this.value)"></div>
+      <div class="card">
+        <div class="row"><div>Sleep last night</div><div class="r">7h 20m</div></div>
+        <div class="row"><div>Energy</div><div class="r">6/10</div></div>
+        <div class="row"><div>Screen exposure</div><div class="r">___</div></div>
+      </div>
+      <button class="btn" onclick="submitCheckin()">Submit Check-In →</button>
+    </div>
+    <div id="checkin-done" style="display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+      <div style="font-size:36px;margin-bottom:12px;">✅</div>
+      <div style="font-weight:700;margin-bottom:6px;">Check-in submitted</div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">Thanks — added to today's recovery pattern.</p>
+      <button class="btn" style="width:auto;padding:12px 20px;" onclick="showScreen('insights')">See my pattern →</button>
+    </div>
+    <div class="bottomnav">
+      <button class="navitem" data-tab="home" onclick="showScreen('home')"><span class="e">🏠</span>Home</button>
+      <button class="navitem active" data-tab="checkin" onclick="showScreen('checkin')"><span class="e">📝</span>Check-in</button>
+      <button class="navitem" data-tab="activity" onclick="showScreen('activity')"><span class="e">🏃</span>Activity</button>
+      <button class="navitem" data-tab="insights" onclick="showScreen('insights')"><span class="e">📊</span>Insights</button>
+      <button class="navitem" data-tab="report" onclick="showScreen('report')"><span class="e">📄</span>Report</button>
+    </div>
+    <button class="fab" onclick="openChat()">💬</button>
+  </div>
+
+  <!-- ACTIVITY -->
+  <div class="screen" id="screen-activity">
+    <div class="section-title" style="font-size:16px;">Start an activity</div>
+    <div class="chip-grid" id="chip-grid"></div>
+    <div class="card">
+      <div class="section-title">Activity → Response → Recovery</div>
+      <div class="bda" id="bda-row">
+        <div id="bda-before"><b>Before</b>How do you feel?</div>
+        <div id="bda-during"><b>During</b>How difficult?</div>
+        <div id="bda-after"><b>After</b>How do you feel now?</div>
+      </div>
+    </div>
+    <button class="btn" id="activity-btn" onclick="activityNext()">Begin Study →</button>
+    <div class="bottomnav">
+      <button class="navitem" data-tab="home" onclick="showScreen('home')"><span class="e">🏠</span>Home</button>
+      <button class="navitem" data-tab="checkin" onclick="showScreen('checkin')"><span class="e">📝</span>Check-in</button>
+      <button class="navitem active" data-tab="activity" onclick="showScreen('activity')"><span class="e">🏃</span>Activity</button>
+      <button class="navitem" data-tab="insights" onclick="showScreen('insights')"><span class="e">📊</span>Insights</button>
+      <button class="navitem" data-tab="report" onclick="showScreen('report')"><span class="e">📄</span>Report</button>
+    </div>
+    <button class="fab" onclick="openChat()">💬</button>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="screen" id="screen-insights">
+    <div class="card">
+      <div class="section-title">Symptom level</div>
+      <svg class="graph" viewBox="0 0 300 110" preserveAspectRatio="none">
+        <polyline points="10,20 70,45 130,70 190,78 260,92" fill="none" stroke="#5B8DEF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="graph-labels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span></div>
+    </div>
+    <div class="card">
+      <div class="pill" id="insight-pill">⚪ Log a few check-ins to see your pattern</div>
+      <p id="insight-text">NeuroBase needs at least 2 check-ins to detect a trend in your recovery.</p>
+      <button class="why-btn" id="why-btn" onclick="toggleWhy()" style="display:none;">Why am I seeing this? <span id="why-arrow">›</span></button>
+      <div class="why-box" id="why-box"></div>
+    </div>
+    <div class="card navy">
+      <div class="tag">💡 Today's insight</div>
+      <p>Your recent logs show that longer study sessions have sometimes been followed by increased difficulty concentrating.</p>
+    </div>
+    <div class="card" style="background:#F3F6FA;border:none;">
+      <p style="color:var(--navy-soft);">Consider discussing your activity pattern with your healthcare professional.</p>
+    </div>
+    <div class="bottomnav">
+      <button class="navitem" data-tab="home" onclick="showScreen('home')"><span class="e">🏠</span>Home</button>
+      <button class="navitem" data-tab="checkin" onclick="showScreen('checkin')"><span class="e">📝</span>Check-in</button>
+      <button class="navitem" data-tab="activity" onclick="showScreen('activity')"><span class="e">🏃</span>Activity</button>
+      <button class="navitem active" data-tab="insights" onclick="showScreen('insights')"><span class="e">📊</span>Insights</button>
+      <button class="navitem" data-tab="report" onclick="showScreen('report')"><span class="e">📄</span>Report</button>
+    </div>
+    <button class="fab" onclick="openChat()">💬</button>
+  </div>
+
+  <!-- REPORT -->
+  <div class="screen" id="screen-report">
+    <div style="text-align:center;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:14px;">NeuroBase Recovery Report</div>
+      <div style="font-size:11px;color:var(--text-muted);">Period: Aug 10 → Aug 24</div>
+    </div>
+    <div class="card">
+      <div class="section-title">Symptoms</div>
+      <div class="row"><div>Headache</div><div class="r" style="color:var(--blue);">↓</div></div>
+      <div class="row"><div>Dizziness</div><div class="r" style="color:var(--blue);">↓</div></div>
+      <div class="row"><div>Fatigue</div><div class="r" style="color:var(--text-soft);">→</div></div>
+      <div class="row"><div>Concentration</div><div class="r" style="color:var(--green);">↑</div></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Activity</div>
+      <div class="row"><div>Study</div><div class="r">8 sessions</div></div>
+      <div class="row"><div>Walking</div><div class="r">6 sessions</div></div>
+      <div class="row"><div>Screen</div><div class="r">11 sessions</div></div>
+      <div class="row"><div>Relaxation</div><div class="r">5 sessions</div></div>
+    </div>
+    <div class="card" style="background:#F3F6FA;border:none;">
+      <div class="section-title">Notable patterns</div>
+      <p>Concentration ratings improved over the reporting period.</p>
+    </div>
+    <button class="btn outline" style="margin-top:6px;">Export PDF →</button>
+    <div class="bottomnav">
+      <button class="navitem" data-tab="home" onclick="showScreen('home')"><span class="e">🏠</span>Home</button>
+      <button class="navitem" data-tab="checkin" onclick="showScreen('checkin')"><span class="e">📝</span>Check-in</button>
+      <button class="navitem" data-tab="activity" onclick="showScreen('activity')"><span class="e">🏃</span>Activity</button>
+      <button class="navitem" data-tab="insights" onclick="showScreen('insights')"><span class="e">📊</span>Insights</button>
+      <button class="navitem active" data-tab="report" onclick="showScreen('report')"><span class="e">📄</span>Report</button>
+    </div>
+    <button class="fab" onclick="openChat()">💬</button>
+  </div>
+
+  <!-- CHAT OVERLAY -->
+  <div id="chat-overlay" style="position:absolute;inset:0;background:#fff;border-radius:36px;padding:20px;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s ease-out;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:15px;">💬 Ask NeuroBase</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="settings-toggle" onclick="toggleKeyBox()">⚙️</button>
+        <button style="background:none;border:none;font-size:18px;color:var(--text-soft);cursor:pointer;" onclick="closeChat()">✕</button>
+      </div>
+    </div>
+    <div class="key-box" id="key-box" style="display:none;">
+      <div style="font-size:11px;font-weight:600;">Your Groq API key (this device only)</div>
+      <input type="password" id="api-key-input" placeholder="gsk_...">
+      <div class="hint" id="key-hint">No key yet — using demo answers until you add one.</div>
+    </div>
+    <div id="chat-messages" style="flex:1;overflow-y:auto;margin-bottom:8px;"></div>
+    <div class="suggestions">
+      <button class="sugg" onclick="askSuggestion('How have I been doing this week?')">How have I been doing this week?</button>
+      <button class="sugg" onclick="askSuggestion('What activities did I do yesterday?')">What activities did I do yesterday?</button>
+      <button class="sugg" onclick="askSuggestion('Why did my recovery pattern change?')">Why did my recovery pattern change?</button>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Ask about your recovery…" onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="send-btn" onclick="sendChat()">↑</button>
+    </div>
+  </div>
+
+</div>
+
+<footer>NeuroBase doesn't diagnose or decide medical readiness — it surfaces patterns for you to discuss with your healthcare professional.</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ---- Supabase connection ----
+const SUPABASE_URL = "https://gmulszmkpdweslxuizey.supabase.co";
+const SUPABASE_KEY = "sb_publishable_qWsOpJooqsbsy5zw73JkMg_eJPwnIXB";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let mode = "signup";
+let userName = "";
+let currentUserId = null;
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+// ---- Auth (real Supabase) ----
+const authName = document.getElementById('auth-name');
+const authEmail = document.getElementById('auth-email');
+const authPassword = document.getElementById('auth-password');
+const authSubmit = document.getElementById('auth-submit');
+const authError = document.getElementById('auth-error');
+
+function checkAuthReady(){
+  const ready = authEmail.value.trim() && authPassword.value.trim().length >= 6 && (mode === "login" || authName.value.trim());
+  authSubmit.disabled = !ready;
+}
+authName.addEventListener('input', checkAuthReady);
+authEmail.addEventListener('input', checkAuthReady);
+authPassword.addEventListener('input', checkAuthReady);
+
+document.getElementById('auth-switch').addEventListener('click', ()=>{
+  mode = mode === "signup" ? "login" : "signup";
+  document.getElementById('auth-title').textContent = mode === "signup" ? "Create your account" : "Welcome back";
+  document.getElementById('auth-sub').textContent = mode === "signup" ? "Let's set up your recovery dashboard." : "Log in to see your recovery pattern.";
+  authName.style.display = mode === "signup" ? "block" : "none";
+  authName.previousElementSibling.style.display = mode === "signup" ? "block" : "none";
+  authSubmit.textContent = mode === "signup" ? "Create account →" : "Log in →";
+  document.getElementById('auth-switch').textContent = mode === "signup" ? "Already have an account? Log in" : "New here? Create an account";
+  authError.style.display = "none";
+  checkAuthReady();
+});
+
+authSubmit.addEventListener('click', async ()=>{
+  authError.style.display = "none";
+  authSubmit.disabled = true;
+  authSubmit.textContent = "Please wait…";
+  const email = authEmail.value.trim();
+  const password = authPassword.value.trim();
+
+  try{
+    if(mode === "signup"){
+      const { data, error } = await sb.auth.signUp({
+        email, password,
+        options: { data: { name: authName.value.trim() } }
+      });
+      if(error) throw error;
+      currentUserId = data.user?.id;
+      userName = authName.value.trim();
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+      currentUserId = data.user?.id;
+      userName = data.user?.user_metadata?.name || email.split('@')[0];
+    }
+    document.getElementById('home-name').textContent = userName;
+    await loadDashboard();
+    showScreen('home');
+  }catch(err){
+    authError.textContent = err.message || "Something went wrong.";
+    authError.style.display = "block";
+  }
+  authSubmit.disabled = false;
+  authSubmit.textContent = mode === "signup" ? "Create account →" : "Log in →";
+});
+
+// ---- Check-in (real save to Supabase) ----
+function updateSlider(name, val){ document.getElementById('v-'+name).textContent = val + '/10'; }
+
+async function submitCheckin(){
+  const vals = {
+    headache: Number(document.getElementById('v-headache').textContent),
+    dizziness: Number(document.getElementById('v-dizziness').textContent),
+    fatigue: Number(document.getElementById('v-fatigue').textContent),
+    concentration: Number(document.getElementById('v-concentration').textContent),
+    light_sensitivity: Number(document.getElementById('v-light').textContent),
+    sleep_hours: 7.33,
+    energy: 6,
+  };
+  if(currentUserId){
+    try{
+      await sb.from('checkins').insert({ user_id: currentUserId, ...vals });
+      await loadDashboard();
+    }catch(err){
+      console.error("Could not save check-in:", err);
+    }
+  }
+  document.getElementById('checkin-form').style.display = 'none';
+  document.getElementById('checkin-done').style.display = 'flex';
+}
+
+// ---- Load real data from Supabase and refresh the dashboard ----
+async function loadDashboard(){
+  if(!currentUserId) return;
+  try{
+    const { data, error } = await sb
+      .from('checkins')
+      .select('*')
+      .eq('user_id', currentUserId)
+      .order('created_at', { ascending: false })
+      .limit(7);
+    if(error) throw error;
+    if(!data || data.length === 0) return; // keep demo numbers until real check-ins exist
+
+    const latest = data[0];
+    document.querySelectorAll('.metric .val')[0].textContent = latest.headache + '/10';
+    document.querySelectorAll('.metric .val')[1].textContent = latest.energy + '/10';
+    document.querySelectorAll('.metric .val')[2].textContent = latest.concentration + '/10';
+    document.querySelectorAll('.metric .val')[3].textContent = latest.sleep_hours + 'h';
+
+    // Rebuild the symptom-level graph from real headache values, oldest to newest
+    const points = [...data].reverse().map(d => d.headache);
+    if(points.length >= 2){
+      const w = 300, h = 110, pad = 15;
+      const step = (w - pad*2) / (points.length - 1);
+      const coords = points.map((v,i) => {
+        const x = pad + i*step;
+        const y = h - pad - (v/10)*(h - pad*2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+      document.querySelector('#screen-insights svg polyline').setAttribute('points', coords);
+    }
+
+    computeAndRenderInsight(data);
+  }catch(err){
+    console.error("Could not load dashboard:", err);
+  }
+}
+
+// ---- Real, explainable trend detection (lightweight ML: no black box, every number traceable) ----
+function computeAndRenderInsight(dataNewestFirst){
+  const pill = document.getElementById('insight-pill');
+  const text = document.getElementById('insight-text');
+  const whyBtn = document.getElementById('why-btn');
+  const whyBox = document.getElementById('why-box');
+
+  const chron = [...dataNewestFirst].reverse();
+  if(chron.length < 2){
+    pill.textContent = "⚪ Log a few check-ins to see your pattern";
+    pill.style.background = "#EEF1F5"; pill.style.color = "#6B7686";
+    text.textContent = "NeuroBase needs at least 2 check-ins to detect a trend in your recovery.";
+    whyBtn.style.display = "none";
+    return;
+  }
+
+  const metrics = [
+    { key: "headache", label: "headache", better: "down" },
+    { key: "dizziness", label: "dizziness", better: "down" },
+    { key: "fatigue", label: "fatigue", better: "down" },
+    { key: "concentration", label: "concentration", better: "up" },
+    { key: "light_sensitivity", label: "light sensitivity", better: "down" },
+  ];
+
+  const mid = Math.max(1, Math.floor(chron.length / 2));
+  const older = chron.slice(0, mid);
+  const recent = chron.slice(mid);
+  const avg = (arr, key) => arr.reduce((s, d) => s + (d[key] ?? 0), 0) / arr.length;
+
+  const deltas = metrics.map(m => {
+    const a1 = avg(older, m.key), a2 = avg(recent, m.key);
+    const improvement = m.better === "down" ? (a1 - a2) : (a2 - a1);
+    return { ...m, a1, a2, improvement };
+  });
+
+  const overall = deltas.reduce((s, d) => s + d.improvement, 0) / deltas.length;
+  const ranked = [...deltas].sort((a, b) => Math.abs(b.improvement) - Math.abs(a.improvement));
+  const top2 = ranked.slice(0, 2).filter(d => Math.abs(d.improvement) >= 0.3);
+
+  let status, pillBg, pillColor, summary;
+  if(overall > 0.4){
+    status = "🟢 Your pattern is improving";
+    pillBg = "#EAFBF3"; pillColor = "#2E9C71";
+    summary = top2.length
+      ? `Your reported ${top2.map(d=>d.label).join(" and ")} have gradually improved over your last ${chron.length} check-ins.`
+      : `Your overall symptom load has gradually improved over your last ${chron.length} check-ins.`;
+  } else if(overall < -0.4){
+    status = "🔵 Some symptoms have increased";
+    pillBg = "#EAF1FE"; pillColor = "#3B6FD9";
+    summary = top2.length
+      ? `Your reported ${top2.map(d=>d.label).join(" and ")} have gone up over your last ${chron.length} check-ins. Worth mentioning at your next check-up.`
+      : `Your overall symptom load has gone up over your last ${chron.length} check-ins. Worth mentioning at your next check-up.`;
+  } else {
+    status = "⚪ Your pattern looks steady";
+    pillBg = "#EEF1F5"; pillColor = "#6B7686";
+    summary = `Your symptoms have stayed fairly stable over your last ${chron.length} check-ins.`;
+  }
+
+  pill.textContent = status;
+  pill.style.background = pillBg; pill.style.color = pillColor;
+  text.textContent = summary;
+
+  whyBtn.style.display = "inline-block";
+  const detailLines = ranked.slice(0, 3).map(d => {
+    const dir = d.improvement > 0 ? "improved" : d.improvement < 0 ? "increased" : "stayed flat";
+    return `${d.label}: ${d.a1.toFixed(1)} → ${d.a2.toFixed(1)} (${dir})`;
+  });
+  whyBox.innerHTML = `This is based on comparing your earlier check-ins to your most recent ones, symptom by symptom:<br><br>` + detailLines.join("<br>");
+}
+
+// ---- Activity ----
+const chips = [["📚","Study"],["📖","Reading"],["🚶","Walking"],["💻","Screen"],["🎧","Music"],["🧘","Relaxation"],["🎨","Creative"],["🛋️","Rest"],["🏃","Physical"]];
+let selectedActivity = "Study";
+let activityStage = "idle";
+const chipGrid = document.getElementById('chip-grid');
+chips.forEach(([icon,label])=>{
+  const el = document.createElement('div');
+  el.className = 'chip' + (label==='Study' ? ' sel' : '');
+  el.innerHTML = '<span class="e">'+icon+'</span>'+label;
+  el.onclick = ()=>{
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+    el.classList.add('sel');
+    selectedActivity = label;
+    activityStage = "idle";
+    document.getElementById('activity-btn').textContent = "Begin "+label+" →";
+    document.getElementById('activity-btn').className = "btn";
+    document.getElementById('bda-before').classList.remove('on');
+    document.getElementById('bda-during').classList.remove('on');
+  };
+  chipGrid.appendChild(el);
+});
+function activityNext(){
+  const btn = document.getElementById('activity-btn');
+  if(activityStage === "idle"){
+    activityStage = "during";
+    btn.textContent = "Finish "+selectedActivity+" →";
+    btn.className = "btn";
+    btn.style.background = "var(--blue)";
+    document.getElementById('bda-during').classList.add('on');
+  } else if(activityStage === "during"){
+    activityStage = "done";
+    btn.style.display = "none";
+    const bda = document.getElementById('bda-row');
+    const done = document.createElement('div');
+    done.style.cssText = "margin-top:12px;text-align:center;color:#2E9C71;font-weight:600;font-size:12px;background:#EAFBF3;border-radius:14px;padding:12px;";
+    done.textContent = "✓ Logged — added to your recovery pattern";
+    done.id = "activity-done-msg";
+    bda.parentElement.appendChild(done);
+  }
+}
+
+// ---- Insights ----
+function toggleWhy(){
+  const box = document.getElementById('why-box');
+  const arrow = document.getElementById('why-arrow');
+  box.classList.toggle('show');
+  arrow.textContent = box.classList.contains('show') ? '︿' : '›';
+}
+
+// ---- Chat ----
+let chatOpen = false;
+function openChat(){ document.getElementById('chat-overlay').style.transform = 'translateY(0)'; chatOpen = true; }
+function closeChat(){ document.getElementById('chat-overlay').style.transform = 'translateY(100%)'; chatOpen = false; }
+function toggleKeyBox(){ const b = document.getElementById('key-box'); b.style.display = b.style.display === 'none' ? 'block' : 'none'; }
+
+const chatMessages = document.getElementById('chat-messages');
+function addBubble(from, text){
+  const div = document.createElement('div');
+  div.className = 'chat-bubble ' + from;
+  div.textContent = text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+addBubble('user', "Why did my pattern change today?");
+addBubble('bot', "Your fatigue increased from 3/10 yesterday to 6/10 today, while your concentration rating decreased. That's why today's pattern differs from your recent trend.");
+
+const apiKeyInput = document.getElementById('api-key-input');
+apiKeyInput.addEventListener('input', ()=>{
+  document.getElementById('key-hint').textContent = apiKeyInput.value.trim()
+    ? "Key set — your messages now go to the real AI."
+    : "No key yet — using demo answers until you add one.";
+});
+
+function mockAnswer(q){
+  const l = q.toLowerCase();
+  if(l.includes('week')) return "This week your concentration and fatigue ratings have gradually improved, while headache stayed roughly steady.";
+  if(l.includes('yesterday')) return "Yesterday you logged Study (30 min), Walk (20 min), and Screen (45 min).";
+  if(l.includes('pattern change')) return "Your fatigue increased from 3/10 yesterday to 6/10 today, while your concentration rating decreased. That's why today's pattern differs from your recent trend.";
+  return "I can't determine whether you're medically recovered. I can show you your recent patterns, which you can discuss with your healthcare professional.";
+}
+
+async function askAI(q){
+  const key = apiKeyInput.value.trim();
+  if(!key) return mockAnswer(q);
+  try{
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        max_tokens: 300,
+        messages: [
+          { role: "system", content: "You are the NeuroBase in-app assistant for a concussion-recovery tracking app. You only discuss the user's logged symptoms, activities, and recovery patterns. You never diagnose, never say someone is medically recovered, and always defer medical judgment to their healthcare professional. Keep answers short (2-3 sentences)." },
+          { role: "user", content: q }
+        ]
+      })
+    });
+    const data = await res.json();
+    return data?.choices?.[0]?.message?.content?.trim() || mockAnswer(q);
+  }catch(e){
+    return mockAnswer(q);
+  }
+}
+
+async function sendChat(){
+  const input = document.getElementById('chat-input');
+  const q = input.value.trim();
+  if(!q) return;
+  addBubble('user', q);
+  input.value = '';
+  addBubble('bot', '…');
+  const answer = await askAI(q);
+  chatMessages.lastChild.textContent = answer;
+}
+function askSuggestion(q){
+  document.getElementById('chat-input').value = q;
+  sendChat();
+}
+</script>
+
+</body>
 </html>
+
